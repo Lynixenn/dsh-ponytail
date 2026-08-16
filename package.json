@@ -1,6 +1,6 @@
 {
   "name": "dsh-ponytail",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "DeepSeek Harness plugin: Ponytail, the lazy senior dev. Always-on minimal-code persona with /ponytail intensity levels (lite|full|ultra|off), plus review/audit/debt/gain/help commands and skills. Cache-safe: static system-prompt section, append-only mode notices, zero per-turn injection.",
   "license": "MIT",
   "type": "module",

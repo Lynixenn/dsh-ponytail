@@ -107,6 +107,10 @@ export function apply(ctx: Context): void {
     name: 'ponytail',
     description:
       'Report the current session level, or set the default for new sessions: /ponytail default <mode>. The level is fixed at session start.',
+    // Declared input makes the UI claim "/ponytail " and pass trailing text as
+    // args; without it the UI runs commands only on the bare token and
+    // "/ponytail default ultra" would fall through to the model as plain text.
+    input: { hint: 'default off|lite|full|ultra' },
     handler: ({ agent, rawInput }) => {
       const { arg, arg2 } = parsePonytailArgs(rawInput)
 
