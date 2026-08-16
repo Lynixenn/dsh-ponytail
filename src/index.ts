@@ -59,9 +59,14 @@ function state(): PonytailState {
   return cachedState
 }
 
+/** Resolved default for new sessions: env var > persisted default > full. */
+function defaultMode(): PonytailMode {
+  return resolveDefaultMode(process.env, state().defaultMode)
+}
+
 /** Current level for a session: what was baked at session start, else the default. */
 function currentMode(agentId: string): PonytailMode {
-  return normalizeMode(getSessionMode(agentId, state(), resolveDefaultMode())) ?? DEFAULT_MODE
+  return normalizeMode(getSessionMode(agentId, state(), defaultMode())) ?? DEFAULT_MODE
 }
 
 /** Steer a work-order prompt as a user-role message (append-only; wakes the driver). */
@@ -79,7 +84,7 @@ export function apply(ctx: Context): void {
   // 1. Compact global section (static, mode-neutral): the subagent vehicle.
   //    Registered only when the deployment default isn't 'off', so an
   //    off-by-default deployment bakes nothing anywhere.
-  if (resolveDefaultMode() !== 'off') {
+  if (defaultMode() !== 'off') {
     ctx.systemPrompt.section({ name: 'ponytail:global', order: SECTION_ORDER, text: GLOBAL_SECTION_TEXT })
   }
 
