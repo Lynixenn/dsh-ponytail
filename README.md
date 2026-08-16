@@ -4,6 +4,8 @@
 DeepSeek Harness plugin. Always-on minimal-code persona with intensity levels
 decided at session start, slash commands, and model-invocable skills.
 
+> **Disclaimer:** This is a vibecoded project — written fast, for personal use only. It's public solely for easy installation; there's no support, no guarantees, and no promise it'll be maintained.
+
 > **Status: written, not installed.** This plugin is built and self-checked but
 > deliberately not added to any profile yet — see [Install](#install).
 
