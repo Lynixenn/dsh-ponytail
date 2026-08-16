@@ -137,10 +137,23 @@ Trivial one-liners need no test.`
  * the whole conversation (cache-safe, see the header). Injected via
  * agent.inject: the web UI shows it as a collapsed "context injection" row
  * with the one-line summary; the full text rides the model request.
+ *
+ * The text is the EXACT ponytail prompt this session received — the global
+ * section plus the baked level ruleset — so what you expand in the chat is
+ * what the model reads. Slightly redundant for the model (it also gets these
+ * as prompt sections) but that is the point: visible proof.
  */
 export function buildActiveMarker(mode: PonytailLevel): { text: string; summary: string } {
   return {
-    text: `PONYTAIL ACTIVE — level: ${mode}. The lazy-senior-dev ruleset is baked into this session at ${mode}; the level is fixed at session start. /ponytail-help for levels; /ponytail default <mode> sets the default for new sessions.`,
+    text: `PONYTAIL ACTIVE — level: ${mode} (fixed at session start; /ponytail-help for levels, /ponytail default <mode> sets the default for new sessions).
+
+The exact ponytail prompt injected into this session:
+
+--- Global section (every agent, incl. subagents) ---
+${GLOBAL_SECTION_TEXT}
+
+--- Session ruleset (this session only, baked at start) ---
+${buildModeSection(mode)}`,
     summary: `ponytail active — ${mode}`,
   }
 }

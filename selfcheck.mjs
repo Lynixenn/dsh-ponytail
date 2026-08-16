@@ -3,7 +3,7 @@
  * dsh-ponytail self-check — the ONE runnable check behind this plugin.
  *
  * Exercises the pure logic (mode parsing, default resolution, baked-section
- * filtering, mode reports, skill catalog) against the built bundle. Fails
+ * filtering, mode reports, the session marker) against the built bundle. Fails
  * (non-zero exit) if any of it breaks. No frameworks, no fixtures.
  *
  * Run: node selfcheck.mjs   (after pnpm run build)
@@ -14,7 +14,6 @@ import {
   GAIN_TEXT,
   GLOBAL_SECTION_TEXT,
   HELP_TEXT,
-  SKILLS,
   buildActiveMarker,
   buildModeSection,
   modeReport,
@@ -80,11 +79,15 @@ ok('modeReport renders per level', () => {
   assert.equal(modeReport('full'), 'PONYTAIL MODE ACTIVE — level: full.')
   assert.equal(modeReport('off'), 'PONYTAIL MODE OFF — ponytail is inactive.')
 })
-ok('buildActiveMarker is static, level-tagged, and notice-bounded', () => {
+ok('buildActiveMarker shows the full injected prompt, static and bounded', () => {
   const ultra = buildActiveMarker('ultra')
   assert.match(ultra.text, /PONYTAIL ACTIVE — level: ultra/)
   assert.match(ultra.summary, /ultra/)
   assert.ok(ultra.summary.length <= 120, 'summary within the notice bound')
+  // The marker text IS the full injected prompt: global section + baked ruleset.
+  assert.ok(ultra.text.includes(GLOBAL_SECTION_TEXT), 'global section embedded')
+  assert.ok(ultra.text.includes(buildModeSection('ultra')), 'level ruleset embedded')
+  assert.ok(ultra.text.indexOf(buildModeSection('lite')) === -1, 'other levels must not leak in')
   assert.doesNotMatch(ultra.text, /\{\{/) // no interpolated variables → cache-safe
   assert.deepEqual(buildActiveMarker('full'), buildActiveMarker('full')) // static per session
 })
@@ -92,17 +95,6 @@ ok('GAIN_TEXT and HELP_TEXT are static and switching-free', () => {
   assert.match(GAIN_TEXT, /▼ 80–94%/)
   assert.match(HELP_TEXT, /ponytail default/)
   assert.doesNotMatch(HELP_TEXT, /ponytail lite\s*\n/) // no switch command advertised
-})
-
-// --- skills ---
-ok('all six skills registered with names, descriptions, and content', () => {
-  assert.equal(SKILLS.length, 6)
-  const names = SKILLS.map((s) => s.name).sort()
-  assert.deepEqual(names, ['ponytail', 'ponytail-audit', 'ponytail-debt', 'ponytail-gain', 'ponytail-help', 'ponytail-review'])
-  for (const s of SKILLS) {
-    assert.ok(s.description.length > 20, `${s.name}: description`)
-    assert.ok(s.content.length > 200, `${s.name}: content`)
-  }
 })
 
 console.log(`\n${checks} checks passed.`)

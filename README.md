@@ -2,7 +2,7 @@
 
 [Ponytail](https://github.com/DietrichGebert/ponytail) — the lazy senior dev — as a
 DeepSeek Harness plugin. Always-on minimal-code persona with intensity levels
-decided at session start, slash commands, and model-invocable skills.
+decided at session start, with slash commands.
 
 > **Disclaimer:** This is a vibecoded project — written fast, for personal use only. It's public solely for easy installation; there's no support, no guarantees, and no promise it'll be maintained.
 
@@ -16,9 +16,10 @@ decided at session start, slash commands, and model-invocable skills.
 - **Always-on persona** — the baked ruleset: the 7-rung ladder (YAGNI → reuse →
   stdlib → native → installed dep → one line → minimum), root-cause fix rule,
   intensity line, output discipline, and the "never lazy about" list.
-- **Visible activation marker** — each session logs a one-line
-  "ponytail active — &lt;level&gt;" context notice (a collapsed row in the chat),
-  so you can see the level is baked without reading the system prompt.
+- **Visible activation marker** — each session logs a "ponytail active —
+  &lt;level&gt;" context notice (a collapsed row in the chat) whose expanded text is
+  the **exact injected prompt**: the global section plus the baked ruleset, so
+  what you read in the chat is what the model reads.
 - **Subagents** — a compact static global section gives them the persona and
   command vocabulary (agent-scoped sections don't propagate to subagents, so
   the global layer is the vehicle).
@@ -26,8 +27,10 @@ decided at session start, slash commands, and model-invocable skills.
   `/ponytail-debt` steer one model turn (the only places that inject extra
   prompt information); `/ponytail-gain` and `/ponytail-help` are instant,
   zero-token reference cards.
-- **Skills** — the six ponytail skills registered as runtime skills, so the
-  model can invoke them on its own via the skill tool.
+- **Commands only, no skills.** All six operations are slash commands with
+  deterministic host-side handlers. The upstream skills were dropped: they
+  duplicated the commands and the baked persona, and their catalog costs
+  prefix tokens every session.
 - **"stop ponytail" / "normal mode"** — handled conversationally by the baked
   section; the model reverts for the rest of the session.
 
@@ -42,7 +45,7 @@ byte-stable:
 | Work orders (`/ponytail-review` & co.) | Append-only user-role messages — a new tail; everything before keeps cache-hitting. |
 | Session-start marker | ONE static user-role context message (plugin `notice`), injected once via `agent.inject` without waking the driver — byte-identical all session, just makes the bake visible. |
 | `/ponytail` report, `-gain`, `-help` | UI command plane: **zero model tokens, zero cache effect**. |
-| Skills | Durable catalog + append-only loads (owned by `dsh-tool-skill`). |
+| Skills | None — commands only; no skill catalog to inject. |
 | Mode state | Host-side JSON file — never part of any request. |
 | Per-turn injection | None. No timestamps, no state, no `{{variables}}` in any section. |
 

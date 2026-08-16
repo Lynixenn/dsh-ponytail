@@ -16,27 +16,30 @@
  *     /ponytail-debt) inject extra prompt information, as append-only user
  *     messages — a new tail, so everything before keeps cache-hitting.
  *   - /ponytail-gain and /ponytail-help are pure UI text: zero model tokens.
+ *   - A visible session-start marker (plugin notice) shows the baked level —
+ *     the full injected text — as a collapsed chat row. See buildActiveMarker.
+ *   - Commands only: no runtime skills. The six operations are slash commands
+ *     (deterministic host-side handlers); skills would duplicate the commands
+ *     and the baked persona, and their catalog costs prefix tokens per session.
  *
  * Mapping to upstream:
  *   SessionStart mode-filtered ruleset  → buildModeSection baked agent-scoped
  *   SubagentStart hook                  → static GLOBAL_SECTION_TEXT
- *   skills (review/audit/debt/gain/help) → ctx.skills runtime skills
- *   statusline badge                    → not ported (no DSH statusline)
+ *   skills (review/audit/debt/gain/help) → slash commands (work orders)
+ *   statusline badge                    → the session-start marker (see above)
  */
 
 import type { Context } from '@deepseek-ai/cordis'
 import type { Agent } from '@deepseek-ai/dsh-agent'
 import { createUserMessage } from '@deepseek-ai/dsh-llm'
-// Type-only: bring the ctx.commands / ctx.skills / ctx.systemPrompt /
-// agent/session-start Context merges into this program.
+// Type-only: bring the ctx.commands / ctx.systemPrompt / agent/session-start
+// Context merges into this program.
 import type {} from '@deepseek-ai/dsh-commands'
-import type {} from '@deepseek-ai/dsh-skill'
 import type {} from '@deepseek-ai/dsh-system-prompt'
 
 import { DEFAULT_MODE, normalizeMode, parsePonytailArgs, resolveDefaultMode } from './modes.ts'
 import type { PonytailLevel, PonytailMode } from './modes.ts'
 import { AUDIT_PROMPT, buildActiveMarker, buildModeSection, DEBT_PROMPT, GAIN_TEXT, GLOBAL_SECTION_TEXT, HELP_TEXT, modeReport, REVIEW_PROMPT } from './prompt.ts'
-import { SKILLS } from './skills.ts'
 import { getSessionMode, loadState, setDefaultMode, setSessionMode } from './state.ts'
 import type { PonytailState } from './state.ts'
 
@@ -44,13 +47,13 @@ import type { PonytailState } from './state.ts'
 export const name = 'dsh-ponytail'
 
 /** Services this plugin needs before load; fail loud if a host lacks them. */
-export const inject = ['systemPrompt', 'commands', 'skills']
+export const inject = ['systemPrompt', 'commands']
 
 /** Static section order: after persona (0), before tool guidance (100–199). */
 const SECTION_ORDER = 30
 
 // Re-export pure helpers so selfcheck.mjs can exercise the logic without a host.
-export { AUDIT_PROMPT, buildActiveMarker, DEBT_PROMPT, DEFAULT_MODE, GAIN_TEXT, GLOBAL_SECTION_TEXT, HELP_TEXT, REVIEW_PROMPT, SKILLS, buildModeSection, modeReport, normalizeMode, parsePonytailArgs, resolveDefaultMode }
+export { AUDIT_PROMPT, buildActiveMarker, DEBT_PROMPT, DEFAULT_MODE, GAIN_TEXT, GLOBAL_SECTION_TEXT, HELP_TEXT, REVIEW_PROMPT, buildModeSection, modeReport, normalizeMode, parsePonytailArgs, resolveDefaultMode }
 
 /** In-memory state cache: the plugin is the only writer, so the object stays in sync. */
 let cachedState: PonytailState | null = null
@@ -204,12 +207,7 @@ export function apply(ctx: Context): void {
 
   ctx.commands.register({
     name: 'ponytail-help',
-    description: 'Quick reference for the ponytail levels, commands, and skills.',
+    description: 'Quick reference for the ponytail levels and commands.',
     handler: () => ({ kind: 'success', text: HELP_TEXT }),
   })
-
-  // 4. Runtime skills — model-invocable (and user-invocable) via the skill tool.
-  for (const skill of SKILLS) {
-    ctx.skills.register(skill)
-  }
 }
