@@ -16,6 +16,9 @@ decided at session start, slash commands, and model-invocable skills.
 - **Always-on persona** — the baked ruleset: the 7-rung ladder (YAGNI → reuse →
   stdlib → native → installed dep → one line → minimum), root-cause fix rule,
   intensity line, output discipline, and the "never lazy about" list.
+- **Visible activation marker** — each session logs a one-line
+  "ponytail active — &lt;level&gt;" context notice (a collapsed row in the chat),
+  so you can see the level is baked without reading the system prompt.
 - **Subagents** — a compact static global section gives them the persona and
   command vocabulary (agent-scoped sections don't propagate to subagents, so
   the global layer is the vehicle).
@@ -37,6 +40,7 @@ byte-stable:
 |---|---|
 | System prompt | Static global section + one **agent-scoped section baked once at session start**. Both are byte-identical for the whole conversation — the level can't change, so the prefix never invalidates. |
 | Work orders (`/ponytail-review` & co.) | Append-only user-role messages — a new tail; everything before keeps cache-hitting. |
+| Session-start marker | ONE static user-role context message (plugin `notice`), injected once via `agent.inject` without waking the driver — byte-identical all session, just makes the bake visible. |
 | `/ponytail` report, `-gain`, `-help` | UI command plane: **zero model tokens, zero cache effect**. |
 | Skills | Durable catalog + append-only loads (owned by `dsh-tool-skill`). |
 | Mode state | Host-side JSON file — never part of any request. |

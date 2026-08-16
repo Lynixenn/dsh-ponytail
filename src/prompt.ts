@@ -14,6 +14,10 @@
  *   - work-order commands (/ponytail-review & co.) inject their prompt as an
  *     append-only user message — new tail only, everything before keeps
  *     cache-hitting;
+ *   - the session-start marker is ONE static user-role context message
+ *     (agent.inject with a plugin notice source), baked once at session start:
+ *     byte-identical all session, so the prefix stays stable — it just makes
+ *     the bake visible in the chat as a collapsed "context injection" row;
  *   - commands and skills never touch the request prefix.
  * Do not add {{variables}}, timestamps, or per-turn content to any section:
  * strict interpolation throws on unknown references, and a changing value
@@ -125,6 +129,20 @@ Lazy code without its check is unfinished: non-trivial logic (a branch, a
 loop, a parser, a money/security path) leaves ONE runnable check behind — an
 assert-based self-check or one small test file. No frameworks, no fixtures.
 Trivial one-liners need no test.`
+}
+
+/**
+ * The visible session-start marker (plugin `notice` context). Static per
+ * session — the level is baked once, so this message is byte-identical for
+ * the whole conversation (cache-safe, see the header). Injected via
+ * agent.inject: the web UI shows it as a collapsed "context injection" row
+ * with the one-line summary; the full text rides the model request.
+ */
+export function buildActiveMarker(mode: PonytailLevel): { text: string; summary: string } {
+  return {
+    text: `PONYTAIL ACTIVE — level: ${mode}. The lazy-senior-dev ruleset is baked into this session at ${mode}; the level is fixed at session start. /ponytail-help for levels; /ponytail default <mode> sets the default for new sessions.`,
+    summary: `ponytail active — ${mode}`,
+  }
 }
 
 /** UI-plane report text for the current session level (never a model message). */

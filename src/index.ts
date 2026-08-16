@@ -34,8 +34,8 @@ import type {} from '@deepseek-ai/dsh-skill'
 import type {} from '@deepseek-ai/dsh-system-prompt'
 
 import { DEFAULT_MODE, normalizeMode, parsePonytailArgs, resolveDefaultMode } from './modes.ts'
-import type { PonytailMode } from './modes.ts'
-import { AUDIT_PROMPT, buildModeSection, DEBT_PROMPT, GAIN_TEXT, GLOBAL_SECTION_TEXT, HELP_TEXT, modeReport, REVIEW_PROMPT } from './prompt.ts'
+import type { PonytailLevel, PonytailMode } from './modes.ts'
+import { AUDIT_PROMPT, buildActiveMarker, buildModeSection, DEBT_PROMPT, GAIN_TEXT, GLOBAL_SECTION_TEXT, HELP_TEXT, modeReport, REVIEW_PROMPT } from './prompt.ts'
 import { SKILLS } from './skills.ts'
 import { getSessionMode, loadState, setDefaultMode, setSessionMode } from './state.ts'
 import type { PonytailState } from './state.ts'
@@ -50,7 +50,7 @@ export const inject = ['systemPrompt', 'commands', 'skills']
 const SECTION_ORDER = 30
 
 // Re-export pure helpers so selfcheck.mjs can exercise the logic without a host.
-export { AUDIT_PROMPT, DEBT_PROMPT, DEFAULT_MODE, GAIN_TEXT, GLOBAL_SECTION_TEXT, HELP_TEXT, REVIEW_PROMPT, SKILLS, buildModeSection, modeReport, normalizeMode, parsePonytailArgs, resolveDefaultMode }
+export { AUDIT_PROMPT, buildActiveMarker, DEBT_PROMPT, DEFAULT_MODE, GAIN_TEXT, GLOBAL_SECTION_TEXT, HELP_TEXT, REVIEW_PROMPT, SKILLS, buildModeSection, modeReport, normalizeMode, parsePonytailArgs, resolveDefaultMode }
 
 /** In-memory state cache: the plugin is the only writer, so the object stays in sync. */
 let cachedState: PonytailState | null = null
@@ -79,6 +79,33 @@ function steerWork(agent: Agent, text: string): void {
   )
 }
 
+/**
+ * Visible session-start marker: one static user-role context message injected
+ * WITHOUT waking the driver (agent.inject → next-step, wakeup=false). The web
+ * UI renders it as a collapsed "context injection" row with the notice
+ * summary; the text rides the model request. Static per session → the prefix
+ * stays byte-identical (see the cache contract in prompt.ts).
+ */
+function markActive(agent: Agent, mode: PonytailLevel): void {
+  const { text, summary } = buildActiveMarker(mode)
+  agent.inject(
+    createUserMessage({
+      content: [{ type: 'text', text }],
+      source: { kind: 'plugin', plugin: 'dsh-ponytail', form: 'notice', summary },
+    }),
+  )
+}
+
+/** Resume dedup: never inject a second marker into a session that already has one. */
+function hasMarker(agent: Agent): boolean {
+  return agent.session.events.some(
+    (event) =>
+      event.type === 'user/message' &&
+      event.data.source.kind === 'plugin' &&
+      event.data.source.plugin === 'dsh-ponytail',
+  )
+}
+
 /** Start the plugin when Harness loads it. */
 export function apply(ctx: Context): void {
   // 1. Compact global section (static, mode-neutral): the subagent vehicle.
@@ -101,6 +128,7 @@ export function apply(ctx: Context): void {
       setSessionMode(state(), agent.id, mode) // persist what we baked (resume fidelity)
       if (mode !== 'off') {
         agent.ctx.systemPrompt.section({ name: 'ponytail:persona', order: SECTION_ORDER, text: buildModeSection(mode) })
+        if (!hasMarker(agent)) markActive(agent, mode)
       }
     } catch {
       // Never break session start over a state read or registration.

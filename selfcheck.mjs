@@ -15,6 +15,7 @@ import {
   GLOBAL_SECTION_TEXT,
   HELP_TEXT,
   SKILLS,
+  buildActiveMarker,
   buildModeSection,
   modeReport,
   normalizeMode,
@@ -78,6 +79,14 @@ ok('GLOBAL_SECTION_TEXT is static and neutral', () => {
 ok('modeReport renders per level', () => {
   assert.equal(modeReport('full'), 'PONYTAIL MODE ACTIVE — level: full.')
   assert.equal(modeReport('off'), 'PONYTAIL MODE OFF — ponytail is inactive.')
+})
+ok('buildActiveMarker is static, level-tagged, and notice-bounded', () => {
+  const ultra = buildActiveMarker('ultra')
+  assert.match(ultra.text, /PONYTAIL ACTIVE — level: ultra/)
+  assert.match(ultra.summary, /ultra/)
+  assert.ok(ultra.summary.length <= 120, 'summary within the notice bound')
+  assert.doesNotMatch(ultra.text, /\{\{/) // no interpolated variables → cache-safe
+  assert.deepEqual(buildActiveMarker('full'), buildActiveMarker('full')) // static per session
 })
 ok('GAIN_TEXT and HELP_TEXT are static and switching-free', () => {
   assert.match(GAIN_TEXT, /▼ 80–94%/)
